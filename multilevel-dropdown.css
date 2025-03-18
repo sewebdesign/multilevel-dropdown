@@ -1,7 +1,7 @@
 :root {
 	--droppaddingtopbottom: .5em;
 	--droppaddingleftright: 1em;
-	--borderthickness: 1px;
+	--borderthickness: 0px;
 	--bordercolor: currentColor;
 }
 
