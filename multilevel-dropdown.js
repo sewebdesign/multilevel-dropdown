@@ -1,14 +1,53 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Get language labels from the existing elements
+  // Get language labels from existing elements
   function getLanguageLabels() {
     // Find existing back button and folder label in the DOM to extract translations
     const existingBackBtn = document.querySelector('.header-menu-controls-control[data-action="back"]');
     const existingFolderLabel = document.querySelector('.header-menu-nav-item .visually-hidden');
     
     return {
-      back: existingBackBtn ? existingBackBtn.querySelector('span:not(.chevron)').textContent.trim() : 'Back',
+      back: existingBackBtn ? existingBackBtn.querySelector('span:not(.header-dropdown-icon)').textContent.trim() : 'Back',
       folder: existingFolderLabel ? existingFolderLabel.textContent.trim() : 'Folder:'
     };
+  }
+
+  // Poll for dropdown icon with timeout
+  function pollForDropdownIcon(callback, timeout = 5000) {
+    const startTime = Date.now();
+    const pollInterval = 100;
+    
+    function checkForIcon() {
+      const icon = document.querySelector('.header-dropdown-icon');
+      
+      if (icon && icon.innerHTML.trim() !== '') {
+        // Icon is loaded and has content
+        callback(icon);
+        return;
+      }
+      
+      if (Date.now() - startTime < timeout) {
+        // Continue polling if timeout hasn't been reached
+        setTimeout(checkForIcon, pollInterval);
+      } else {
+        // Timeout reached, proceed without icon
+        console.warn('Dropdown icon not found after polling, proceeding without icon');
+        callback(null);
+      }
+    }
+    
+    checkForIcon();
+  }
+
+  // Store items that need icons to be applied later
+  const itemsNeedingIcons = [];
+  function applyIconsToItems(dropdownIcon) {
+    itemsNeedingIcons.forEach(item => {
+      if (item.type === 'mobile') {
+        const iconClone = dropdownIcon ? dropdownIcon.cloneNode(true) : document.createElement('span');
+        item.element.appendChild(iconClone);
+      }
+    });
+    itemsNeedingIcons.length = 0;
   }
 
   // Get language labels
@@ -58,58 +97,52 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get the text content without the plus
         const textContent = link.textContent.trim().substring(1).trim();
         
-        // Update the link with the right chevron structure
+        // Update the link with the dropdown icon structure
         const navItemContent = link.querySelector('.header-menu-nav-item-content');
         if (navItemContent) {
           navItemContent.innerHTML = `
             <span class="visually-hidden">${labels.folder}</span>
             <span>${textContent}</span>
-            <span class="chevron chevron--right"></span>
           `;
+          itemsNeedingIcons.push({ element: navItemContent, type: 'mobile' });
         } else {
           // If there's no nav-item-content, create one
-          link.textContent = ''; // Clear existing text
+          link.textContent = '';
           const newContent = document.createElement('div');
           newContent.classList.add('header-menu-nav-item-content');
           newContent.innerHTML = `
             <span class="visually-hidden">${labels.folder}</span>
             <span>${textContent}</span>
-            <span class="chevron chevron--right"></span>
           `;
           link.appendChild(newContent);
+          itemsNeedingIcons.push({ element: newContent, type: 'mobile' });
         }
         
         // Create subfolder
         const subFolder = document.createElement('div');
         subFolder.setAttribute('data-sub-folder', currentSubfolderId);
         subFolder.classList.add('header-menu-nav-folder');
-        
-        // Create subfolder content
         const subFolderContent = document.createElement('div');
         subFolderContent.classList.add('header-menu-nav-folder-content');
         
-        // Create back button that only toggles active class
+        // Create back button
         const backBtn = document.createElement('div');
         backBtn.classList.add('header-menu-controls', 'container', 'header-menu-nav-item');
         backBtn.innerHTML = `
           <a class="header-menu-controls-control header-menu-controls-control--active" href="#" tabindex="-1">
-            <span class="chevron chevron--left"></span><span>${labels.back}</span>
+            <span>${labels.back}</span>
           </a>
         `;
         subFolderContent.appendChild(backBtn);
         
         // Setup subfolder
         subFolder.appendChild(subFolderContent);
-        
-        // Store references for later use
         item.subFolder = subFolder;
         item.subFolderContent = subFolderContent;
         
         // Add click event to open subfolder
         link.addEventListener('click', function(e) {
           e.preventDefault();
-          
-          // Add active class to this subfolder
           subFolder.classList.add('header-menu-nav-folder--active');
         });
         
@@ -118,8 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (subFolderBackBtn) {
           subFolderBackBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            // Remove active class from this subfolder
             subFolder.classList.remove('header-menu-nav-folder--active');
           });
         }
@@ -150,5 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
     itemsToMove.forEach(moveInfo => {
       moveInfo.targetContent.appendChild(moveInfo.item);
     });
+  });
+
+  // Start polling for the dropdown icon and apply it when found
+  pollForDropdownIcon(function(dropdownIcon) {
+    if (dropdownIcon) {
+      applyIconsToItems(dropdownIcon);
+    }
   });
 });
