@@ -1,12 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Get language labels from existing elements
   function getLanguageLabels() {
-    // Find existing back button and folder label in the DOM to extract translations
-    const existingBackBtn = document.querySelector('.header-menu-controls-control[data-action="back"]');
+    // Find existing folder label in the DOM to extract translations
     const existingFolderLabel = document.querySelector('.header-menu-nav-item .visually-hidden');
     
     return {
-      back: existingBackBtn ? existingBackBtn.querySelector('span:not(.header-dropdown-icon)').textContent.trim() : 'Back',
       folder: existingFolderLabel ? existingFolderLabel.textContent.trim() : 'Folder:'
     };
   }
@@ -40,6 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Store items that need icons to be applied later
   const itemsNeedingIcons = [];
+
+  // Function to apply icons to stored mobile items only
   function applyIconsToItems(dropdownIcon) {
     itemsNeedingIcons.forEach(item => {
       if (item.type === 'mobile') {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Get language labels
   const labels = getLanguageLabels();
   
-  // Handle desktop menu
+  // Handle desktop menu (keep original chevron method)
   const folderContents = document.querySelectorAll('#header .header-nav-folder-content');
   folderContents.forEach(folderContent => {
     const folderItems = Array.from(folderContent.querySelectorAll('.header-nav-folder-item'));
@@ -125,14 +125,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const subFolderContent = document.createElement('div');
         subFolderContent.classList.add('header-menu-nav-folder-content');
         
-        // Create back button
-        const backBtn = document.createElement('div');
-        backBtn.classList.add('header-menu-controls', 'container', 'header-menu-nav-item');
-        backBtn.innerHTML = `
-          <a class="header-menu-controls-control header-menu-controls-control--active" href="#" tabindex="-1">
-            <span>${labels.back}</span>
-          </a>
-        `;
+        // Clone the existing parent folder back button structure
+        const existingBackBtn = document.querySelector('.header-menu-controls-control[data-action="back"]');
+        let backBtn;      
+        if (existingBackBtn) {
+          // Clone the entire parent structure
+          const parentContainer = existingBackBtn.closest('.header-menu-controls');
+          backBtn = parentContainer.cloneNode(true);          
+          // Update the href and remove data-action since this is our custom back button
+          const clonedLink = backBtn.querySelector('.header-menu-controls-control');
+          clonedLink.setAttribute('href', '#');
+          clonedLink.removeAttribute('data-action');
+        }
         subFolderContent.appendChild(backBtn);
         
         // Setup subfolder
@@ -186,7 +190,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Start polling for the dropdown icon and apply it when found
   pollForDropdownIcon(function(dropdownIcon) {
     if (dropdownIcon) {
+      console.log('Dropdown icon found and loaded, applying to navigation items');
       applyIconsToItems(dropdownIcon);
+    } else {
+      console.log('Proceeding without dropdown icon');
     }
   });
 });
