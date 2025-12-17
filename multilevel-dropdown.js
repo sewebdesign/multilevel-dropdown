@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add click event to open subfolder
         link.addEventListener('click', function(e) {
           e.preventDefault();
+          e.stopPropagation();
           subFolder.classList.add('header-menu-nav-folder--active');
         });
         
